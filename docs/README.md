@@ -38,5 +38,7 @@ README.md 只介绍项目（各语言译本在 [i18n/](i18n/)），所有技术�
 | [notes/domain-words.md](notes/domain-words.md) | 领域词（2026-09-12）：从输入日志人工挑 48 条进基础词库的挑法、低频词当 token 统计为什么伤整句、两把尺子的前后数字 |
 | [notes/constant-sweep.md](notes/constant-sweep.md) | 排序常数扫描（2026-09-12）：插值与敲错代价在冻结日志上扫网格，全在平台区不改；没命中的构成与复现步骤 |
 | [notes/windows-win10.md](notes/windows-win10.md) | Windows 10 与设置程序（2026-09-13）：Reactor 早期绑定 Windows 11 才有的 AppModel API 导致加载期失败，改自包含部署 + 延迟加载 |
+| [notes/windows-dev-variant.md](notes/windows-dev-variant.md) | 正式版与开发版同机共存：`QINGJIAN_VARIANT=dev` 编一套标识错开的产物，两条输入法各自有 Server、管道与数据目录，随时切换对比 |
+| [notes/windows-build-pitfalls.md](notes/windows-build-pitfalls.md) | Windows 本机构建与联调的坑：`onig_sys` 的 `D8050` / `LNK1104` 怎么绕、Server 在管理员会话里不会被自动拉起、注册了 DLL 却不进输入法列表、协议版本必须两端同源 |
 
 约定：文档写中文，代码标识符一律英文。实现与文档产生分歧时以代码为准，并同步更新文档。
