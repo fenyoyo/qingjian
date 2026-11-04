@@ -5,6 +5,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+# 构建期读 QINGJIAN_VARIANT，定下正式版 / 开发版（见 build.rs 与 src/identity.rs）
+build = "build.rs"
 
 [lints]
 workspace = true

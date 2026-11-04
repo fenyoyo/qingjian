@@ -55,9 +55,29 @@ cargo test -p qingjian-windows-server -p qingjian-windows-tsf
 
 真正编译与试用都在 Windows 机器上（MSVC 工具链）。
 
+第一次在 Windows 上搭起来之前先看 [windows-build-pitfalls.md](../../docs/notes/windows-build-pitfalls.md)：
+`onig_sys` 的 C 编译在部分机器上会报 `D8050` / `LNK1104`（有绕法）、
+Server 在管理员会话里不会被 DLL 自动拉起、注册了 DLL 也不一定进输入法列表。
+
+### 和正式版并存：`scripts/dev-variant.ps1`
+
+调试时想留着装好的正式版日常用、同时随时换新代码，用这个脚本——它编一份**开发版**
+（`QINGJIAN_VARIANT=dev`，CLSID / profile / 管道 / 互斥体 / 数据目录全与正式版错开），
+装到 `%LOCALAPPDATA%\QingjianDev` 并注册成第二条输入法「青简 Dev」，两个 Server 可以同时跑：
+
+```powershell
+pwsh -File apps\windows\scripts\dev-variant.ps1             # 编 + 装 + 注册 + 起
+pwsh -File apps\windows\scripts\dev-variant.ps1 -SkipBuild  # 只装 + 注册 + 起
+pwsh -File apps\windows\scripts\dev-variant.ps1 -Unregister # 反注册
+```
+
+装完 Win+空格 里会有「青简」与「青简 Dev」两条。标识一览、为什么数据目录也要分开、以及两个实现约束
+（cfg 不跨 crate、正式版标识不能动）见 [windows-dev-variant.md](../../docs/notes/windows-dev-variant.md)。
+
 ### 本地联调：`scripts/test-local.ps1`
 
-改了 Server 或 DLL 之后要试手，用这个脚本，别手敲：
+改了 Server 或 DLL 之后要试手，用这个脚本，别手敲。它走的是**替换正式版**那条路
+（想边留正式版边调，用上面的 `dev-variant.ps1`）：
 
 ```powershell
 pwsh -File apps\windows\scripts\test-local.ps1            # 编译 + 换 Server + 起，DLL 那步要管理员

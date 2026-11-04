@@ -12,6 +12,7 @@ pub mod dirs;
 mod error;
 pub mod extra_dictionaries;
 mod i18n;
+pub mod identity;
 pub mod logs;
 pub mod model_words;
 pub mod protocol;

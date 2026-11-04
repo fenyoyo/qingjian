@@ -42,9 +42,13 @@ use crate::com::module_path;
 const LAUNCH_COOLDOWN: Duration = Duration::from_secs(5);
 
 /// 跨进程互斥体：多个应用的 DLL 同时发现 Server 不在时只起一个（第二个起来的抢不到管道会自己退出）。
-const LAUNCH_MUTEX: windows::core::PCWSTR = w!("Local\\QingjianServerLaunch");
+/// 按变体分开，免得正式版与开发版的 DLL 互相以为对方已经在拉。
+fn launch_mutex_name() -> windows::core::HSTRING {
+    windows::core::HSTRING::from(qingjian_platform::identity::LAUNCH_MUTEX)
+}
 
 /// 安装 / 卸载程序运行期间持有的互斥体，名字与 `qingjian.iss` 的 `HoldInstallerMutex` 一致。
+/// 两个变体共用：装正式版的时候，开发版的 DLL 同样不该去拉 Server（会占住正在被替换的 exe）。
 const INSTALLER_MUTEX: windows::core::PCWSTR = w!("Global\\QingjianInstaller");
 
 /// 普通桌面应用的完整性级别 RID（UAC 未提升的用户进程）。低一档是 AppContainer / 浏览器沙箱，
@@ -191,7 +195,8 @@ fn installer_running() -> bool {
 
 /// 跨进程互斥体；已被别的进程持有（对方正在起 Server）返回 `None`。
 fn launch_mutex() -> Option<LaunchMutex> {
-    let handle = unsafe { CreateMutexW(None, false, LAUNCH_MUTEX) }.ok()?;
+    let name = launch_mutex_name();
+    let handle = unsafe { CreateMutexW(None, false, &name) }.ok()?;
     if unsafe { GetLastError() } == ERROR_ALREADY_EXISTS {
         let _ = unsafe { CloseHandle(handle) };
         return None;
