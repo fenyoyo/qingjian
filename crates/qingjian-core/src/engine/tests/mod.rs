@@ -171,6 +171,7 @@ impl Translator for FixedTranslator {
                     text: "develop".into(),
                     reading: None,
                     fresh: false,
+                    pronunciation: None,
                 }],
             )
         })
