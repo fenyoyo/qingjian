@@ -1,17 +1,22 @@
-//! Windows 上设置程序只开一个：第二次启动把已开的窗口带到前台后退出（旧设置程序同一套做法，名字不同，两个可以同时开）。
+//! Windows 上设置程序只开一个：第二次启动把已开的窗口带到前台后退出
+//! （旧设置程序同一套做法，名字不同，两个可以同时开；开发版另有一个互斥体，也能与正式版同时开）。
 
 use windows::Win32::Foundation::{ERROR_ALREADY_EXISTS, GetLastError};
 use windows::Win32::System::Threading::CreateMutexW;
 use windows::Win32::UI::WindowsAndMessaging::{
     FindWindowW, IsIconic, SW_RESTORE, SetForegroundWindow, ShowWindow,
 };
-use windows::core::{HSTRING, w};
+use windows::core::HSTRING;
 
 use crate::i18n::CATALOG;
 
 /// 已有实例在跑就唤起它并返回 `false`；这是第一个实例返回 `true`。互斥体句柄故意不关，进程退出时由系统回收。
+///
+/// 互斥体名按变体分开（`qingjian_platform::identity::SETTINGS_MUTEX`）：开发版与正式版各开一个，
+/// 各自编辑自己的配置目录，互不干扰。
 pub fn acquire() -> bool {
-    let created = unsafe { CreateMutexW(None, false, w!("Local\\QingjianSettings")) };
+    let name = HSTRING::from(qingjian_platform::identity::SETTINGS_MUTEX);
+    let created = unsafe { CreateMutexW(None, false, &name) };
     if created.is_err() || unsafe { GetLastError() } != ERROR_ALREADY_EXISTS {
         return true;
     }
@@ -19,7 +24,13 @@ pub fn acquire() -> bool {
     let found = CATALOG
         .variants("common.window_title")
         .into_iter()
-        .find_map(|title| unsafe { FindWindowW(None, &HSTRING::from(title)) }.ok());
+        .find_map(|title| {
+            let title = format!(
+                "{title}{}",
+                qingjian_platform::identity::WINDOW_TITLE_SUFFIX
+            );
+            unsafe { FindWindowW(None, &HSTRING::from(title)) }.ok()
+        });
     if let Some(hwnd) = found {
         unsafe {
             if IsIconic(hwnd).as_bool() {

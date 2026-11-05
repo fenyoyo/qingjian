@@ -83,10 +83,28 @@ pub const ICON_FILE: &str = "qingjian-dev.ico";
 #[cfg(not(qingjian_variant_dev))]
 pub const ICON_FILE: &str = "qingjian.ico";
 
+/// 设置程序窗口标题的后缀。正式版为空（标题就是各语言文案里的名字），开发版加「 Dev」，
+/// 两个窗口同时开着时一眼分得清。跟着界面语言走，所以不用 [`DISPLAY_NAME`]（那个只有中文名）。
+#[cfg(qingjian_variant_dev)]
+pub const WINDOW_TITLE_SUFFIX: &str = " Dev";
+/// 设置程序窗口标题的后缀，正式版没有。
+#[cfg(not(qingjian_variant_dev))]
+pub const WINDOW_TITLE_SUFFIX: &str = "";
+
+/// 设置程序的单实例互斥体。按变体分开，两套设置程序才能同时开、各自编辑自己的配置。
+///
+/// 注意它与旧设置程序（`qingjian-settings-legacy.exe`）的互斥体本来就不同，见 `system::single_instance`。
+#[cfg(qingjian_variant_dev)]
+pub const SETTINGS_MUTEX: &str = r"Local\QingjianSettings-dev";
+/// 设置程序的单实例互斥体。
+#[cfg(not(qingjian_variant_dev))]
+pub const SETTINGS_MUTEX: &str = r"Local\QingjianSettings";
+
 #[cfg(test)]
 mod tests {
     use super::{
         CLSID, CLSID_STR, DIR_NAME, DISPLAY_NAME, IS_DEV, PIPE_NAME, PROFILE, SERVER_MUTEX,
+        SETTINGS_MUTEX, WINDOW_TITLE_SUFFIX,
     };
 
     /// 正式版的标识是已发布产品的身份，一个字节都不能变——变了就是升级后输入法消失。
@@ -102,6 +120,9 @@ mod tests {
         assert_eq!(DISPLAY_NAME, "青简");
         assert_eq!(PIPE_NAME, r"\\.\pipe\qingjian");
         assert_eq!(SERVER_MUTEX, r"Local\QingjianServer");
+        // 正式版设置程序的窗口标题与互斥体也不能变：前者是用户看到的，后者决定能不能开第二个
+        assert_eq!(WINDOW_TITLE_SUFFIX, "");
+        assert_eq!(SETTINGS_MUTEX, r"Local\QingjianSettings");
     }
 
     /// 开发版的每个标识都要与正式版错开，否则同机共存时会互相抢。
@@ -116,5 +137,8 @@ mod tests {
         assert_ne!(SERVER_MUTEX, r"Local\QingjianServer");
         assert_ne!(DIR_NAME, "Qingjian");
         assert_ne!(DISPLAY_NAME, "青简");
+        // 设置程序：标题带后缀才分得清两个窗口，互斥体不同才能同时开
+        assert_eq!(WINDOW_TITLE_SUFFIX, " Dev");
+        assert_ne!(SETTINGS_MUTEX, r"Local\QingjianSettings");
     }
 }
