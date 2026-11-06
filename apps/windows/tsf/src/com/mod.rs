@@ -40,19 +40,22 @@ use windows::core::{BOOL, GUID, HRESULT, HSTRING, Interface};
 use qingjian_platform::protocol::SessionId;
 
 /// 文本服务的 CLSID。注册表 InprocServer32、TSF profile、[`DllGetClassObject`] 都认它。
-pub(crate) const CLSID_QINGJIAN: GUID = GUID::from_u128(0x4fdca82d_e923_49bf_9e75_bb906b93b8bb);
+///
+/// 取值在 `qingjian_platform::identity`：正式版是已发布产品的标识（不能变），
+/// 开发版另有一个，两套才能同时注册进系统、在输入法列表里各占一条。
+pub(crate) const CLSID_QINGJIAN: GUID = GUID::from_u128(qingjian_platform::identity::CLSID);
 
 /// [`CLSID_QINGJIAN`] 的注册表字符串形式，两者必须同步改。
-pub(crate) const CLSID_QINGJIAN_STR: &str = "{4FDCA82D-E923-49BF-9E75-BB906B93B8BB}";
+pub(crate) const CLSID_QINGJIAN_STR: &str = qingjian_platform::identity::CLSID_STR;
 
 /// 语言 profile 的 GUID。
-pub(crate) const GUID_PROFILE: GUID = GUID::from_u128(0x8119f8e0_cf81_423b_9189_c0d7374324b3);
+pub(crate) const GUID_PROFILE: GUID = GUID::from_u128(qingjian_platform::identity::PROFILE);
 
 /// zh-CN。
 pub(crate) const LANGID_ZH_CN: u16 = 0x0804;
 
-/// 输入法在系统里显示的名字。
-pub(crate) const SERVICE_DESCRIPTION: &str = "青简";
+/// 输入法在系统里显示的名字（正式版「青简」，开发版「青简 Dev」）。
+pub(crate) const SERVICE_DESCRIPTION: &str = qingjian_platform::identity::DISPLAY_NAME;
 
 /// 存活的 COM 对象 + LockServer 计数，[`DllCanUnloadNow`] 据它判断能否卸载。
 static DLL_REFERENCES: AtomicIsize = AtomicIsize::new(0);

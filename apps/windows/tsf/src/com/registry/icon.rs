@@ -14,10 +14,14 @@ const ICON_DARK_TASKBAR: &[u8] = include_bytes!("../../../resources/qingjian-mon
 /// 深绿墨，浅色任务栏用。
 const ICON_LIGHT_TASKBAR: &[u8] = include_bytes!("../../../resources/qingjian-mono-light.ico");
 
-/// `%ProgramData%\Qingjian\qingjian.ico`。注册是机器级的，别的用户也要能读到，所以不能放用户目录。
+/// `%ProgramData%\Qingjian\qingjian.ico`（开发版 `qingjian-dev.ico`）。注册是机器级的，
+/// 别的用户也要能读到，所以不能放用户目录。
 fn path() -> Option<PathBuf> {
-    std::env::var_os("ProgramData")
-        .map(|base| PathBuf::from(base).join("Qingjian").join("qingjian.ico"))
+    std::env::var_os("ProgramData").map(|base| {
+        PathBuf::from(base)
+            .join("Qingjian")
+            .join(qingjian_platform::identity::ICON_FILE)
+    })
 }
 
 /// 写不了返回 `None`，调用方注册成无图标。

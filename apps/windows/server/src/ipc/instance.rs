@@ -6,15 +6,19 @@
 
 use windows::Win32::Foundation::{CloseHandle, ERROR_ALREADY_EXISTS, GetLastError, HANDLE};
 use windows::Win32::System::Threading::CreateMutexW;
-use windows::core::w;
+use windows::core::HSTRING;
 
 /// 占着就说明本进程是唯一的 Server；进程结束时系统收回。
 pub struct Instance(HANDLE);
 
 impl Instance {
     /// 已有 Server 占着返回 `None`。互斥体建不出来（不该发生）时也放行，交给管道那道闸门。
+    ///
+    /// 互斥体名按变体分开（见 `qingjian_platform::identity`）：正式版与开发版各有一个 Server，
+    /// 共用同一个名字会让后起的那个直接退出，表现为「开发版怎么改都没反应」。
     pub fn acquire() -> Option<Self> {
-        let Ok(handle) = (unsafe { CreateMutexW(None, false, w!("Local\\QingjianServer")) }) else {
+        let name = HSTRING::from(qingjian_platform::identity::SERVER_MUTEX);
+        let Ok(handle) = (unsafe { CreateMutexW(None, false, &name) }) else {
             return Some(Self(HANDLE::default()));
         };
         if unsafe { GetLastError() } == ERROR_ALREADY_EXISTS {

@@ -81,8 +81,20 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let config = config.ok_or("找不到配置文件的位置")?;
     let settings = Settings::load(config);
-    let mut options = WindowOptions::new(i18n::tr("common.window_title"), (900.0, 680.0));
+    let mut options = WindowOptions::new(window_title(), (900.0, 680.0));
     options.min_size = (640.0, 420.0);
     run_window(settings, options)?;
     Ok(())
+}
+
+/// 窗口标题：各语言文案里的名字，开发版再加 ` Dev` 后缀（[`identity::WINDOW_TITLE_SUFFIX`]）。
+///
+/// 单实例唤起靠这个标题找窗口（`system::single_instance`），两边必须用同一个函数算，
+/// 否则改了后缀就找不到已开的窗口。
+pub(crate) fn window_title() -> String {
+    format!(
+        "{}{}",
+        i18n::tr("common.window_title"),
+        qingjian_platform::identity::WINDOW_TITLE_SUFFIX
+    )
 }

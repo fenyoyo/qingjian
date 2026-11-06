@@ -7,7 +7,10 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 /// 缺省命名管道名。Server 在这上面监听，DLL 用同名连上。放这里让两端共享同一个字面量。
-pub const DEFAULT_PIPE_NAME: &str = r"\\.\pipe\qingjian";
+///
+/// 由 [`crate::identity`] 按变体给出：开发版是 `\\.\pipe\qingjian-dev`，
+/// 两套产物各自的 Server 才能同时监听（否则后起的那个抢不到管道，静默退出）。
+pub const DEFAULT_PIPE_NAME: &str = crate::identity::PIPE_NAME;
 
 /// 单帧上限，挡住坏长度前缀导致的巨量分配。
 const MAX_FRAME: u32 = 16 * 1024 * 1024;

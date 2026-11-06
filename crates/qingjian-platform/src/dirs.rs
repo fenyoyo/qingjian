@@ -6,13 +6,18 @@
 //!   放本机目录有两个原因：日志本来就是这台机器的东西，不该跟账户漫游；DLL 被加载进
 //!   AppContainer 应用（任务栏搜索 / 设置）时写不了漫游目录，Server 启动时会给这个目录授权。
 //!
+//! 目录名的最后一级由 [`crate::identity::DIR_NAME`] 定：开发版是 `Qingjian-dev`，
+//! 两套产物同机跑时才不会争着写同一份 `user.tsv` 与日志。
+//!
 //! 只查环境变量、不碰系统 API，其他平台也能编（拿不到为 `None`）。macOS 有自己的 `paths.rs`，不走这里。
 
 use std::path::PathBuf;
 
-/// 用户数据目录 `%APPDATA%\Qingjian`。
+use crate::identity::DIR_NAME;
+
+/// 用户数据目录 `%APPDATA%\Qingjian`（开发版 `%APPDATA%\Qingjian-dev`）。
 pub fn user_dir() -> Option<PathBuf> {
-    std::env::var_os("APPDATA").map(|base| PathBuf::from(base).join("Qingjian"))
+    std::env::var_os("APPDATA").map(|base| PathBuf::from(base).join(DIR_NAME))
 }
 
 /// 配置文件 `%APPDATA%\Qingjian\config.toml`。
@@ -27,5 +32,5 @@ pub fn themes_dir() -> Option<PathBuf> {
 
 /// 运行日志目录 `%LOCALAPPDATA%\Qingjian\logs`，不负责创建。
 pub fn log_dir() -> Option<PathBuf> {
-    std::env::var_os("LOCALAPPDATA").map(|base| PathBuf::from(base).join("Qingjian").join("logs"))
+    std::env::var_os("LOCALAPPDATA").map(|base| PathBuf::from(base).join(DIR_NAME).join("logs"))
 }

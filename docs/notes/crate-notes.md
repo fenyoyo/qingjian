@@ -424,6 +424,21 @@ id 不能撞拼音侧的写法与日志里的 `wubi`（`is_valid_id`），因为
 `Frame.translation_pos` 随帧下发「译词是否带词性标注」（`[general] translation_pos`，缺省开；与 `aux_code_show` 同款普通 `#[serde(default)]`——帧只由 Server 自己的候选窗消费、DLL 不读该字段，加这种纯字段不 bump 协议版本，枚举变体才必须 bump）；
 `Frame.columns` / `column_ems` 随帧下发横排矩阵视口，带 `serde(default)` 新老互通，DLL 不画候选读不到也照旧）。
 
+`identity`（`src/identity.rs` + `build.rs`）：一份产物在系统里的身份 **正式版 / 开发版**，由构建期 `QINGJIAN_VARIANT` 定
+（`dev` 是开发版，不设是正式版，其余取值让构建直接失败——拼错当成正式版会撞标识，症状很隐蔽）。
+两套要能在同一台机器上共存（正式版日常用、开发版随时换代码），系统里那些**全局唯一**的东西就都得各分一套：
+CLSID、TSF 语言 profile、命名管道、Server 单实例互斥体、拉起互斥体、输入法显示名、`%ProgramData%` 下的图标文件名，
+以及 `dirs` 的数据 / 日志目录名（`%APPDATA%\Qingjian` vs `Qingjian-dev`）。
+只要有一处共用，两个 Server 就抢同一个管道、两个 DLL 抢同一个 CLSID，表现为「切过去没反应」或「时好时坏」，而且失败是静默的。
+正式版那半边是已发布产品的身份，**一个字节都不能动**（动了就是升级后输入法从列表里消失），`identity` 的测试把这一条钉住了；
+开发版那半边可以随便改。判别变体的 `cfg(qingjian_variant_dev)` 由本 crate 的 `build.rs` 发出、**只在本 crate 内有效**
+（rustc 的 cfg 不跨 crate 传播），所以别处一律用这里的常量，不在自己的 crate 里写那个 cfg。
+设置程序的窗口标题后缀与单实例互斥体也在这里（`WINDOW_TITLE_SUFFIX` / `SETTINGS_MUTEX`）：标题后缀接在 i18n 文案后面，
+算法收在 `apps/settings` 的 `main::window_title()`，单实例唤起靠 `FindWindowW` 按同一个标题找窗口，两处必须用同一份逻辑。
+安装程序的 `Global\QingjianInstaller` 不在 identity 里、两个变体共用：安装程序只有正式版那一个，
+开发版的 DLL 在装正式版时同样不该去拉 Server（会占住正在被替换的 exe）。用法见 `apps/windows/README.md`
+「和正式版并存」一节。
+
 ## crates/qingjian-render
 
 画位图的部分已拆到自绘引擎 `crates/bamboo-slip`：下文的 `scene/`、`animation/`、`text/`、`fonts/`、`canvas.rs`、`shadow.rs`

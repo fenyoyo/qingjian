@@ -32,8 +32,11 @@ pub(super) fn sync() {
 }
 
 fn path() -> Option<PathBuf> {
-    std::env::var_os("ProgramData")
-        .map(|base| PathBuf::from(base).join("Qingjian").join("qingjian.ico"))
+    std::env::var_os("ProgramData").map(|base| {
+        PathBuf::from(base)
+            .join("Qingjian")
+            .join(qingjian_platform::identity::ICON_FILE)
+    })
 }
 
 /// 与 DLL 画「中 / 英」图标同一个判断：`SystemUsesLightTheme = 1` 是浅色任务栏，读不到按深色。

@@ -2,10 +2,10 @@
 
 Windows 端是**一个产品、两个产物**，各自一个 package，同放本目录：
 
-| 目录 | package | 产物 | 职责 |
-| --- | --- | --- | --- |
-| `server/` | `qingjian-windows-server` | `qingjian-server.exe` | 持有唯一的输入内核 `qingjian-core::Engine`，跑在所有应用进程之外 |
-| `tsf/` | `qingjian-windows-tsf` | `qingjian_tsf.dll` | TSF 文本服务，被加载进每个应用进程，只做按键转发与文档写入（候选窗口由 Server 自绘） |
+| 目录      | package                   | 产物                  | 职责                                                                                 |
+| --------- | ------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
+| `server/` | `qingjian-windows-server` | `qingjian-server.exe` | 持有唯一的输入内核 `qingjian-core::Engine`，跑在所有应用进程之外                     |
+| `tsf/`    | `qingjian-windows-tsf`    | `qingjian_tsf.dll`    | TSF 文本服务，被加载进每个应用进程，只做按键转发与文档写入（候选窗口由 Server 自绘） |
 
 ```
 应用进程 A ── qingjian_tsf.dll ─┐
@@ -54,6 +54,18 @@ cargo test -p qingjian-windows-server -p qingjian-windows-tsf
 ```
 
 真正编译与试用都在 Windows 机器上（MSVC 工具链）。
+
+### 和正式版并存：`scripts/dev-variant.ps1`
+
+调试时想留着装好的正式版日常用、同时随时换新代码，用这个脚本——它编一份**开发版**
+（`QINGJIAN_VARIANT=dev`，CLSID / profile / 管道 / 互斥体 / 数据目录全与正式版错开），
+装到 `%LOCALAPPDATA%\QingjianDev` 并注册成第二条输入法「青简 Dev」，两个 Server 可以同时跑：
+
+```powershell
+pwsh -File apps\windows\scripts\dev-variant.ps1             # 编 + 装 + 注册 + 起
+pwsh -File apps\windows\scripts\dev-variant.ps1 -SkipBuild  # 只装 + 注册 + 起
+pwsh -File apps\windows\scripts\dev-variant.ps1 -Unregister # 反注册
+```
 
 ### 本地联调：`scripts/test-local.ps1`
 
