@@ -67,21 +67,6 @@ if ($Unregister) {
 Assert-Path $InstallDir '正式版安装目录（先装一次正式版，或者用 -InstallDir 指过去）'
 
 if (-not $SkipBuild) {
-    # TSF 会把 DLL 载进每个宿主进程（记事本、终端、资源管理器…），被载着时编译写不进去：
-    # cargo 报「failed to remove file ... 拒绝访问」或链接期 LNK1104，看着像代码坏了。先点名。
-    $holders = @(
-        tasklist /m qingjian_tsf.dll /NH 2>$null |
-            Select-String -SimpleMatch 'qingjian_tsf.dll'
-    )
-    if ($holders.Count -gt 0) {
-        Write-Host '== 有进程正加载着 TSF DLL，编译写不进去' -ForegroundColor Yellow
-        $holders | ForEach-Object { Write-Host "   $($_.Line.Trim())" -ForegroundColor Yellow }
-        Write-Host ''
-        Write-Host '   切走输入法就能放开（TSF 在切走时卸载 DLL）：Win+Space 换到别的输入法，或 Shift 切英文。' -ForegroundColor Yellow
-        Write-Host '   （查：tasklist /m qingjian_tsf.dll）' -ForegroundColor Yellow
-        exit 1
-    }
-
     Write-Host '== 编译「青简 Dev」' -ForegroundColor Cyan
     $env:QINGJIAN_UIACCESS = '0'
     $env:QINGJIAN_VARIANT = 'dev'
@@ -124,6 +109,35 @@ else {
     Write-Host '   没有在跑的'
 }
 
+# dev 版 DLL 被宿主进程（explorer、编辑器、终端…）加载着时覆盖安装写不进去。
+# 但「已加载」只挡删除与覆盖，不挡改名：把旧的挪成 .old 再放新的，加载着旧 DLL 的进程
+# 继续用旧的那份，新起的进程拿到新的——安装程序换文件也是这个路子。
+# explorer 尤其如此：它常驻，切走输入法也不会立刻卸载，只能这么绕。
+$devDll = Join-Path $DevDir 'qingjian_tsf.dll'
+$staleDll = Join-Path $DevDir 'qingjian_tsf.dll.old'
+$heldByDev = @(
+    Get-Process -ErrorAction SilentlyContinue | ForEach-Object {
+        $p = $_
+        try {
+            if ($p.Modules | Where-Object { $_.FileName -ieq $devDll }) { $p }
+        }
+        catch { }
+    }
+)
+if ($heldByDev.Count -gt 0) {
+    Write-Host "   $devDll 正被 $($heldByDev.Count) 个进程加载，改名绕开" -ForegroundColor DarkGray
+    $heldByDev | Select-Object -First 5 | ForEach-Object {
+        Write-Host "      $($_.ProcessName) (pid $($_.Id))" -ForegroundColor DarkGray
+    }
+    # 上一轮留下的 .old 可能还锁着（那时加载它的进程没退），删不掉就算了，换个名字
+    if (Test-Path -LiteralPath $staleDll) {
+        try { Remove-Item -LiteralPath $staleDll -Force -ErrorAction Stop }
+        catch { $staleDll = Join-Path $DevDir "qingjian_tsf.$([guid]::NewGuid().ToString('N').Substring(0, 8)).old" }
+    }
+    Rename-Item -LiteralPath $devDll -NewName (Split-Path -Leaf $staleDll) -ErrorAction Stop
+    Write-Host '      已挪开，这一轮起来的新进程用新 DLL' -ForegroundColor DarkGray
+}
+
 Write-Host "== 装到 $DevDir" -ForegroundColor Cyan
 New-Item -ItemType Directory -Force -Path $DevDir | Out-Null
 # 随包数据（词库 / 释义表 / 语言模型 / emoji / 方案）从正式版拷，dev 版不自己生成一份
@@ -132,6 +146,19 @@ foreach ($sub in 'data', 'assets', 'licenses') {
     if (Test-Path -LiteralPath $src) {
         robocopy $src (Join-Path $DevDir $sub) /MIR /NFL /NDL /NJH /NJS | Out-Null
         if ($LASTEXITCODE -ge 8) { throw "robocopy $sub 失败（exit $LASTEXITCODE）" }
+    }
+}
+# 正式版比仓库旧时，它没有开发中功能要用的随包数据（`/MIR` 还会把上次补的删掉）。
+# 缺什么就从仓库补一份：这里只有源数据，不进生成的 `data/`。
+$repoLexicon = Join-Path $repo 'assets\lexicon'
+$devLexicon = Join-Path $DevDir 'assets\lexicon'
+foreach ($name in 'english-ipa.tsv') {
+    $srcFile = Join-Path $repoLexicon $name
+    $dstFile = Join-Path $devLexicon $name
+    if ((Test-Path -LiteralPath $srcFile) -and -not (Test-Path -LiteralPath $dstFile)) {
+        New-Item -ItemType Directory -Force -Path $devLexicon | Out-Null
+        Copy-Item -LiteralPath $srcFile -Destination $dstFile -Force
+        Write-Host "   补上正式版还没有的随包数据：assets\lexicon\$name"
     }
 }
 # onnxruntime 等 exe 同级的运行库
