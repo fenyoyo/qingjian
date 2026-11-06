@@ -51,6 +51,11 @@ pub struct InputSettings {
     #[serde(default)]
     pub predict: Option<KeyCombo>,
 
+    /// 朗读当前高亮候选的快捷键（`[shortcut] pronounce`，缺省不绑定）。
+    /// 带 Ctrl 的组合按 `eats_key` 原本归应用，DLL 要按这项把它转给 Server；旧 Server 不带时按关处理。
+    #[serde(default)]
+    pub pronounce: Option<KeyCombo>,
+
     /// 英文候选旁显示音标（`[general] show_english_pronunciation`）。
     ///
     /// 音标本身由 Core 填进 `Candidate::reading`，DLL 只是按这个开关决定画不画：
@@ -80,6 +85,7 @@ impl Default for InputSettings {
             toggle_traditional: None,
             english_candidates: true,
             predict: None,
+            pronounce: None,
             show_english_pronunciation: false,
             single_chars: None,
         }
