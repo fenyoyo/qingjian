@@ -96,11 +96,6 @@ impl Router {
         }
         let candidate = self.layout_candidate(index)?;
         let text = self.engine.commit(&candidate);
-        // 选中英文单词就朗读；中文、数字、带重音的都不读
-        if let Some(word) = crate::speech::speakable(&text) {
-            tracing::info!(word, "朗读上屏的单词");
-            crate::speech::speak(word);
-        }
         Some(text)
     }
 }
