@@ -41,13 +41,17 @@ pub fn pipe_name(user: &UserSid) -> io::Result<String> {
     Ok(format!(r"\\.\pipe\qingjian-{}-{session}", user.to_sddl()?))
 }
 
-/// 管道的 SDDL：本用户全权（Server 要建后续实例）；AppContainer 只给 [`CLIENT_ACCESS`]。
+/// 管道的 SDDL：所有者与全权都归本用户（Server 要建后续实例）；AppContainer 只给 [`CLIENT_ACCESS`]。
 /// AppContainer 进程过访问检查要用户与 AppContainer 两条都满足，所以别的用户的商店应用也连不上。
 /// 完整性标 Low：AppContainer 是 Low，标成 Medium 它就写不进来。
+///
+/// 所有者必须显式写 `O:`：不写就继承创建者令牌的默认 owner，而内置 Administrator 这类账户的令牌
+/// owner 是 BUILTIN\Administrators 而不是用户本人；DLL 侧 [`server_is_trusted`] 拿管道所有者比对
+/// 自己的用户 SID，对不上就把真 Server 也拒了。
 pub fn pipe_sddl(user: &UserSid) -> io::Result<String> {
     let user = user.to_sddl()?;
     Ok(format!(
-        "D:(A;;GA;;;{user})(A;;{CLIENT_ACCESS:#x};;;AC)(A;;{CLIENT_ACCESS:#x};;;S-1-15-2-2)S:(ML;;NW;;;LW)"
+        "O:{user}D:(A;;GA;;;{user})(A;;{CLIENT_ACCESS:#x};;;AC)(A;;{CLIENT_ACCESS:#x};;;S-1-15-2-2)S:(ML;;NW;;;LW)"
     ))
 }
 
